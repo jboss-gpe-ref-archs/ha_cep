@@ -1,6 +1,6 @@
 :data-uri:
 :toc2:
-:ref_arch_doc: link:docs/ref_arch.adoc[project documentation]
+:ref_arch_doc: link:doc/ref_arch.adoc[project documentation]
 
 :numbered!:
 
