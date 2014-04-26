@@ -1,5 +1,6 @@
 :data-uri:
 :toc2:
+:ref_arch_doc: link:docs/ref_arch.adoc[project documentation]
 
 :numbered!:
 
@@ -11,3 +12,5 @@
 short paragraph 
 
 or two that highlights what the reader is going to learn and a link to how to get started
+
+should also reference link to {ref_arch_doc}.
