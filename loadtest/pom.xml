@@ -9,6 +9,7 @@
 
   <properties>
     <version.jmeter>2.10</version.jmeter>
+    <version.log4j>1.2.17</version.log4j>
   </properties>
 
   <dependencies>
@@ -16,6 +17,11 @@
       <groupId>org.apache.jmeter</groupId>
       <artifactId>ApacheJMeter_java</artifactId>
       <version>${version.jmeter}</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${version.log4j}</version>
     </dependency>
     <dependency>
       <groupId>com.redhat.gpe.refarch.ref_arch_template</groupId>
@@ -76,6 +82,7 @@
             </executions>
             <configuration>
                 <propertiesSystem>
+                    <path.to.log4j.xml>${basedir}/src/test/resources/log4j.xml</path.to.log4j.xml>
                 </propertiesSystem>
             </configuration>
             <dependencies>
@@ -83,6 +90,11 @@
                     <groupId>com.redhat.gpe.refarch.ref_arch_template</groupId>
                     <artifactId>domain</artifactId>
                     <version>1.0</version>
+                </dependency>
+                <dependency>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                    <version>${version.log4j}</version>
                 </dependency>
             </dependencies>
         </plugin>

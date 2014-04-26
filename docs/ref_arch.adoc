@@ -1,5 +1,24 @@
 :data-uri:
 :toc2:
+:rhtlink: link:https://www.redhat.com[Red Hat]
 
 image::images/rhheader.png[width=900]
+
+:numbered!:
+[abstract]
+== JBoss GPE Reference Architecture:  Template
+
+:numbered:
+
+== Abstract
+
+== Overview
+
+== Pre-Requisites
+
+== Procedure
+
+== Performance Testing
+
+
 
