@@ -13,4 +13,4 @@ short paragraph
 
 or two that highlights what the reader is going to learn.  It's nice to have a high-level overview of the data flow and deployment architecture ... although avoid too many details at this point.
 
-This section should also reference a link to the {ref_arch_doc}.
+This section should also link to the {ref_arch_doc}.
