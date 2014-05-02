@@ -21,17 +21,22 @@ public final class ExampleJMeterClient extends AbstractJavaSamplerClient {
 
     private static final String PATH_TO_LOG4J_CONFIG = "path.to.log4j.xml";
     private static Logger log = Logger.getLogger("ExampleJMeterClient");
+    private static final String SUCCESS_MESSAGE = "**success**";
 
     private String name;
 
-    public void setupTest(JavaSamplerContext context){
-
+    // obviously gets invoked a single time per JVM
+    static{
         String pathToLog4jConfig = System.getProperty(PATH_TO_LOG4J_CONFIG);
         if(pathToLog4jConfig != null && !pathToLog4jConfig.equals("")) {
             DOMConfigurator.configure(pathToLog4jConfig);
         }
-        name = context.getParameter(TestElement.NAME);
+    }
 
+    // gets invoked a single time for each concurrent client
+    public void setupTest(JavaSamplerContext context){
+        name = context.getParameter(TestElement.NAME);
+        log.info("setupTest() name = "+name);
     }
 
     public SampleResult runTest(JavaSamplerContext context){
@@ -48,7 +53,7 @@ public final class ExampleJMeterClient extends AbstractJavaSamplerClient {
 
             log.info("runTest() mdObj = "+mdObj);
 
-            result.setResponseMessage("runTest() ***** success");
+            result.setResponseMessage(SUCCESS_MESSAGE);
             result.setSuccessful(true);
             result.setResponseCodeOK();
         }catch(Throwable x){

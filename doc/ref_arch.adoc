@@ -32,3 +32,7 @@ image::images/rhheader.png[width=900]
 * Also included is an example Java _Sampler_ at:  $REF_ARCH_HOME/loadtest/src/test/java/com/redhat/gpe/refarch/ref_arch_template/loadtest/ExampleJMeterClient.java
 ** The use of a JMeter _sampler_ class is optional
 * cd to $REF_ARCH_HOME/loadtest and execute:  mvn clean verify
+
+== To-Do
+. resolve this problem
+. resolve that problem

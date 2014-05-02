@@ -2,6 +2,8 @@
 :toc2:
 :ref_arch_doc: link:doc/ref_arch.adoc[project documentation]
 
+image::doc/images/rhheader.png[width=900]
+
 :numbered!:
 
 == PURPOSE:
