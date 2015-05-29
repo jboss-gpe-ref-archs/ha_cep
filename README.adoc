@@ -7,12 +7,9 @@ image::doc/images/rhheader.png[width=900]
 :numbered!:
 
 == PURPOSE:
-* sentence or 
-* two on the purpose of this ref arch
+This is a reference architecture that demonstrates the implementation of a Highly Available Complex Event Processing system with JBoss BRMS. This will attempt to showcase the architectural approaches.
 
 == OVERVIEW:
-short paragraph 
-
-or two that highlights what the reader is going to learn.  It's nice to have a high-level overview of the data flow and deployment architecture ... although avoid too many details at this point.
+In order to achieve high availabality of the CEP engine, we run 2 CEP engine nodes in parallel. Both engines process the same events in the same order. The engines must advance in a deterministically way, so pseudo-clocks are advanced based on the timestamp of the events, and because these events are processed by both engines in the same order. This is one of the concepts used to keep the memory and the agenda of the engines in sync.
 
 This section should also link to the {ref_arch_doc}.

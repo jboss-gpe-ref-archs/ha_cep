@@ -6,7 +6,7 @@ image::images/rhheader.png[width=900]
 
 :numbered!:
 [abstract]
-== JBoss GPE Reference Architecture:  Template
+== JBoss GPE Reference Architecture:  High Availability for CEP
 
 :numbered:
 
