@@ -1,23 +1,75 @@
 :data-uri:
 :toc2:
 :rhtlink: link:https://www.redhat.com[Red Hat]
+:mwlaboverviewsetup: link:http://people.redhat.com/jbride/labsCommon/setup.html[Middleware Lab Overview and Set-up]
+:brmsproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_BRMS/[Red Hat JBoss BRMS 6 product]
+:datagridproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_Data_Grid/[Red Hat JBoss Data Grid product]
+:eapproduct: link: https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/[JBoss Enterprise Application Platform product]
 
 image::images/rhheader.png[width=900]
 
 :numbered!:
 [abstract]
-== JBoss GPE Reference Architecture:  High Availability for CEP
+== JBoss GPE Reference Architecture:  High Availability for JBoss BRMS CEP
 
 :numbered:
 
-== Abstract
-
 == Overview
+This document proposes a solution of high availability for CEP engines and address some challenges when combining JBoss BRMS CEP with HA, like the following:
+
+* Session for CEP are:
+** Stateful, state must be persisted.
+** Used by all Events, sessions are not partitioned by event type, user or session-id.
+** Memory consumption, sessions can have days, due to the events correlation behaviour.
+
 
 == Pre-Requisites
 
+The remainder of this documentation provides instructions for installation, configuration and execution of this reference architecture in Red Hat's Partner Demo System.
+The following is a list of pre-requisites:
+
+. OPENTLC-SSO credentials
++
+`OPENTLC-SSO` user credentials are used to log into the Red Hat Partner Demo System (PDS).
+If you do not currently have an `OPENTLC-SSO` userId, please email: `OPEN-program@redhat.com`.
+
+. Familiarity with Partner Demo System
++
+If you are not already familiar with Red Hat's `Partner Demo System`, please execute what is detailed in the {mwlaboverviewsetup} guide.
+Doing so will ensure that you are proficient with the tooling and workflow needed to complete this reference architecture in an OpenShift Platform as a Service environment.
+
+. Familiarity with {brmsproduct}
+. Complex Event Processing
+. Familiarity with {datagridproduct}
+. Familiarity with {eapproduct}
+
 == Procedure
 * For the purposes of this documentation, the name _$REF_ARCH_HOME_ refers to the root directory of this reference architecture.
+
+== Architecture Details
+
+* Explain the jms durable topic that receives events, the cep nodes thta receives same events by subscribing the jms topic, advnace clock, fire rules, create the command in the RHS and add that to cache. In a case of recovery commands in the cache would be read again but discarded since they already are in the cache. This can be better checked by just checking the last ID in the cache and the ID from the durable topic which have been read again in the recovery process so no need to check all of them and discard.
+
+== *Draft* Activities steps to be added 
+
+* Creation of 2 instances of EAP6 in OSE + datagrid (they should be in cluster)
+* Configure security, jms topic and roles.
+* Configure producer to run in local student machine (build process)
+* When a node crashes it replay all commands until it gets updated.
+
+So a good list of steps would be: 
+
+* Overview
+* Provision EAP instances
+* EAP verification
+* Configuration and Execution
+** Local: Clone this reference architecture
+** Local: Build the Reference Architecture
+** Deploy the CEP application
+** Configure datagrid (check the avaiability of cluster between gears)
+** Configure HornetQ subsystem
+* Test Details
+
 
 == Performance Testing
 * JMeter is used to drive testing of the reference architecture.
