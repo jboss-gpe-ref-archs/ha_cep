@@ -1,0 +1,9 @@
+#!/bin/sh
+
+#
+# Creates the Event topic.
+#
+# author: duncan.doyle@redhat.com
+#
+/subsystem=messaging/hornetq-server=default/jms-topic=EventTopic:add(entries=["topic/event", "java:jboss/exported/topic/event"])
+

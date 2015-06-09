@@ -1,0 +1,12 @@
+#!/bin/sh
+
+#
+# Configures the HornetQ Security Settings
+#
+# author: duncan.doyle@redhat.com
+#
+batch
+/subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=create-durable-queue, value=true)
+/subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=delete-durable-queue, value=true)
+run-batch
+

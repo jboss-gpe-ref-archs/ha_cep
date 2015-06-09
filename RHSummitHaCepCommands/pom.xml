@@ -1,0 +1,40 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.jboss.ddoyle.rhsummit2014.hacepbrms</groupId>
+		<artifactId>RHSummitHaCepRoot</artifactId>
+		<version>1.0.1</version>
+	</parent>
+	<artifactId>RHSummitHaCepCommands</artifactId>
+	<description>RH Summit HA Commands</description>
+	<dependencies>
+		<!-- Project dependencies. -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>RHSummitHaCepModel</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.drools</groupId>
+			<artifactId>drools-core</artifactId>
+		</dependency>
+		
+		<!-- JBoss EAP depdendencies -->
+		<dependency>
+			<groupId>javax.enterprise</groupId>
+			<artifactId>cdi-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+        	<groupId>org.jboss.spec.javax.jms</groupId>
+        	<artifactId>jboss-jms-api_1.1_spec</artifactId>
+        	<scope>provided</scope>
+	    </dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+	</dependencies>
+</project>

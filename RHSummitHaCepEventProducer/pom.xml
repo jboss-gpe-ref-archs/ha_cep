@@ -1,0 +1,78 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.jboss.ddoyle.rhsummit2014.hacepbrms</groupId>
+		<artifactId>RHSummitHaCepRoot</artifactId>
+		<version>1.0.1</version>
+	</parent>
+	<artifactId>RHSummitHaCepEventProducer</artifactId>
+	<description>RH Summit HA CEP Event Producer</description>
+	<dependencies>
+		<!-- Project dependencies. -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>RHSummitHaCepModel</artifactId>
+		</dependency>
+		<!-- JBoss EAP dependencies. -->
+		<dependency>
+			<groupId>org.jboss.spec.javax.jms</groupId>
+			<artifactId>jboss-jms-api_1.1_spec</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>1.0.13</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.0.13</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- Runtime dependencies. -->
+		<dependency>
+			<groupId>org.jboss</groupId>
+			<artifactId>jboss-remote-naming</artifactId>
+			<version>1.0.8.Final-redhat-1</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.xnio</groupId>
+    		<artifactId>xnio-nio</artifactId>
+    		<version>3.0.10.GA-redhat-1</version>
+    		<scope>runtime</scope>
+    	</dependency>
+    	<dependency>
+    		<groupId>org.hornetq</groupId>
+    		<artifactId>hornetq-jms-client</artifactId>
+    		<scope>runtime</scope>
+    	</dependency>
+
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>/Users/samueltauil/.m2/repository/</classpathPrefix>
+							<classpathLayoutType>repository</classpathLayoutType>
+							<mainClass>org.jboss.ddoyle.rhsummit2014.hacepbrms.eventproducer.Main</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
