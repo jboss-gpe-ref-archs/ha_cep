@@ -1,16 +1,16 @@
 :data-uri:
-:toc2:
 :rhtlink: link:https://www.redhat.com[Red Hat]
 :mwlaboverviewsetup: link:http://people.redhat.com/jbride/labsCommon/setup.html[Middleware Lab Overview and Set-up]
 :brmsproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_BRMS/[Red Hat JBoss BRMS 6 product]
 :datagridproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_Data_Grid/[Red Hat JBoss Data Grid product]
-:eapproduct: link: https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/[JBoss Enterprise Application Platform product]
-:haceppreso: link: http://www.slideshare.net/DuncanDoyle/doyle-h-0945highavailablitycepwithredhatjbossbrms3[High Available Complex Event Processing presentation]
-:hagitrepo: link: https://github.com/DuncanDoyle/RHSummit2014HaCepBrms[source code]
+:eapproduct: link:https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/[JBoss Enterprise Application Platform product]
+:haceppreso: link:http://www.slideshare.net/DuncanDoyle/doyle-h-0945highavailablitycepwithredhatjbossbrms3[High Available Complex Event Processing presentation]
+:hacepgitrepo: link:https://github.com/DuncanDoyle/RHSummit2014HaCepBrms[source code]
 
-:numbered!:
-[abstract]
-== JBoss GPE Reference Architecture:  High Availability for JBoss BRMS CEP
+= Highly Available JBoss BRMS CEP
+
+*Goal*
+Configure a highly available JBoss BRMS CEP deployment topology
 
 :numbered:
 
@@ -20,7 +20,7 @@ This document proposes a solution of high availability for CEP engines and addre
 * Session for CEP are:
 ** Stateful, state must be persisted.
 ** Used by all Events, sessions are not partitioned by event type, user or session-id.
-** Memory consumption, sessions can have days, due to the events correlation behaviour.
+** Memory consumption, sessions can have days, due to the events correlation behavior.
 
 == Credits
 This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
@@ -57,7 +57,7 @@ Doing so will ensure that you are proficient with the tooling and workflow neede
 
 ====  Purpose
 ====  Hornetq vs Apache Kafka discussion
-====  HA Hornetq 
+====  HA Hornetq
 
 
 === Event UUID Object
@@ -68,15 +68,15 @@ Doing so will ensure that you are proficient with the tooling and workflow neede
 ==== Event Processing
 **  cep nodes receive JMS message. JMS message contains a CEP event.
 ** CEP clock is advanced
-** rule engine is fired 
-** create the command in the RHS 
-** add that to cache. 
+** rule engine is fired
+** create the command in the RHS
+** add that to cache.
 
 ==== Hot-Rod client
 
 === JBoss Data Grid
 ==== Purpose
-Purpose of JDG is to store the commands generated in the RHS to have idempotent behaviour when the engine restarts. 
+Purpose of JDG is to store the commands generated in the RHS to have idempotent behaviour when the engine restarts.
 It's used to implement the replay executions.
 
 ==== JDG Library Mode Deployment Topology
@@ -100,7 +100,7 @@ In a case of recovery commands in the cache would be read again but discarded si
 === Configure producer to run in local student machine (build process)
 === When a node crashes it replay all commands until it gets updated.
 
-So a good list of steps would be: 
+So a good list of steps would be:
 
 * Overview
 * Provision EAP instances
@@ -127,7 +127,7 @@ Your system needs to be multi-homed. The provided startup scripts bind JBoss EAP
 * Download the `jboss-eap-6.3.0.zip` and `jboss-eap-6.3.3-patch.zip` from the *Red Hat Customer Support Portal* and place them in the `demo/installation_zips` directory.
 * In the `demo` directory, run the `buildJBossEap-HaCepBrms-Demo-Environment.sh` script. This will setup JBoss EAP 6.3.3 in the `demo/target` directory.
 
-NOTE: This last step will fail trying to connect the controller, but it will create the admin user/password and guest user/password. I solved doing all the steps manually as follows. 
+NOTE: This last step will fail trying to connect the controller, but it will create the admin user/password and guest user/password. I solved doing all the steps manually as follows.
 
 * After the execution of the `buildJBossEap-HaCepBrms-Demo-Environment.sh` script, run the `startJBossEAP.sh` script to start JBoss EAP. Open a new terminal move to `RHSummit2014HaCepBrms/demo/target/jboss-eap-6.3/bin`and connect to the controller manually by executing `./jboss-cli.sh -c`.
 * In the prompt `[standalone@localhost:9999 /]` apply the patch by executing `patch apply /path/to/project/RHSummit2014HaCepBrms/demo/installation_zips/jboss-eap-6.3.3-patch.zip`. The return should be:
@@ -143,11 +143,11 @@ NOTE: This last step will fail trying to connect the controller, but it will cre
 }
 ----
 
-* Now execute the command to create the Durable Topic: 
+* Now execute the command to create the Durable Topic:
 
 -----
 /subsystem=messaging/hornetq-server=default/jms-topic=EventTopic:add(entries=["topic/event", "java:jboss/exported/topic/event"])
------ 
+-----
 
 The return should be:
 
@@ -156,7 +156,7 @@ The return should be:
 {"outcome" => "success"}
 -----
 
-* The `guest` role must have the right permissions, so execute: 
+* The `guest` role must have the right permissions, so execute:
 
 -----
 /subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=create-durable-queue, value=true)
@@ -177,7 +177,7 @@ And then:
 * You do not need to download a seperate JMeter binary nor source distribution
 * Instead, JMeter will be downloaded, installed and appropriately configured as part of the configuration found in $REF_ARCH_HOME/loadtest
 * jmeter maven plugin
-** Notice use of the com.lazerycode.jmeter:jmeter-maven-plugin in _$REF_ARCH_HOME/loadtest/pom.xml_ 
+** Notice use of the com.lazerycode.jmeter:jmeter-maven-plugin in _$REF_ARCH_HOME/loadtest/pom.xml_
 ** This maven plugin downloads, installs and appropriately configures JMeter
 ** This maven plugin is also used to drive test scenarios
 * ref_arch.jmx
