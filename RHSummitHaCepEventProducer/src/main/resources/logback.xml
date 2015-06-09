@@ -10,8 +10,7 @@
     </appender>
     
     <appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
-        <!-- Change the path to your proper home directory (could be used ${user.home}) -->
-        <file>/Users/samueltauil/rhSummitHaCepEventProducer.log</file>
+        <file>target/rhSummitHaCepEventProducer.log</file>
         <append>true</append>
         <encoder>
         <!-- 

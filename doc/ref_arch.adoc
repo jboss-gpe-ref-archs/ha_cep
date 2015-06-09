@@ -100,31 +100,19 @@ In a case of recovery commands in the cache would be read again but discarded si
 === Configure producer to run in local student machine (build process)
 === When a node crashes it replay all commands until it gets updated.
 
-So a good list of steps would be:
-
-* Overview
-* Provision EAP instances
-* EAP verification
-* Configuration and Execution
-** Local: Clone this reference architecture
-** Local: Build the Reference Architecture
-** Deploy the CEP application
-** Configure datagrid (check the avaiability of cluster between gears)
-** Configure HornetQ subsystem
-* Test Details
-
 == Steps to Reproduce the Environment
 
 NOTE: The steps listed below are just to reproduce the environment with the solution working. Steps need to be polished and migrated to be OSE compliant.
 
 Your system needs to be multi-homed. The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1 to 127.0.0.3 and the CEP node 2 to 127.0.0.4.
 
-* Download this https://dl.dropboxusercontent.com/u/7034677/RHSummit2014HaCepBrms.zip[zip file] and unzip it.
-* Change the path to your proper home directory (could be used `${user.home}`) in line 130 at `RHSummit2014HaCepBrms/RHSummitHaCepApp/pom.xml`
-* Change the path to your proper home directory (could be used `${user.home}`) in line 69 at `RHSummit2014HaCepBrms/RHSummitHaCepEventProducer/pom.xml`
-* Change the path to your proper home directory (could be used `${user.home}`) in line 14 at RHSummit2014HaCepBrms/RHSummitHaCepEventProducer/src/main/resources/logback.xml`
-* Run `mvn clean install` on the root POM. The dependencies which were missing I fixed in this version.
-* Download the `jboss-eap-6.3.0.zip` and `jboss-eap-6.3.3-patch.zip` from the *Red Hat Customer Support Portal* and place them in the `demo/installation_zips` directory.
+
+
+=== Clone this project
+
+=== Configure and Start JBoss EAP-6.4 Hornetq Broker
+
+ Download the `jboss-eap-6.3.0.zip` and `jboss-eap-6.3.3-patch.zip` from the *Red Hat Customer Support Portal* and place them in the `demo/installation_zips` directory.
 * In the `demo` directory, run the `buildJBossEap-HaCepBrms-Demo-Environment.sh` script. This will setup JBoss EAP 6.3.3 in the `demo/target` directory.
 
 NOTE: This last step will fail trying to connect the controller, but it will create the admin user/password and guest user/password. I solved doing all the steps manually as follows.
@@ -168,28 +156,31 @@ And then:
 /subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=delete-durable-queue, value=true)
 -----
 
-* In the `demo/bin` directory, run the `startNodeOne.sh` and `startNodeTwo.sh` scripts to start the 2 CEP engines. Notice that the 2 engines create an Infinispan cluster.
-* In the `demo/bin` directory, run the `startEventProducer.sh` script to start the EventProducer. This will send the events to the HornetQ system, from where they will be picked up by the CEP engines.
+=== Build project
+. cd $LAB_HOME
+. execute:
++
+-----
+mvn clean compile -s ~/.m2/jdg-offline-settings.xml
+-----
+
+=== Start CEP Nodes
+. cd $LAB_HOME/RHSummitHaCepApp
+. Start CEP node 1:
++
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml
+-----
+. Start CEP node 2:
++
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml -Drhsummit2014.hornetq.client.id=rhsummit2014-hq-client-2
+-----
+
+=== Start Event Producer Client
+
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml
+-----
+
 * To test the replay behavior stop one of the CEP engines and start it again. The commands will be replied but not executed, all of them must be discarded.
-
-== Performance Testing
-* JMeter is used to drive testing of the reference architecture.
-* You do not need to download a seperate JMeter binary nor source distribution
-* Instead, JMeter will be downloaded, installed and appropriately configured as part of the configuration found in $REF_ARCH_HOME/loadtest
-* jmeter maven plugin
-** Notice use of the com.lazerycode.jmeter:jmeter-maven-plugin in _$REF_ARCH_HOME/loadtest/pom.xml_
-** This maven plugin downloads, installs and appropriately configures JMeter
-** This maven plugin is also used to drive test scenarios
-* ref_arch.jmx
-** A sample default jmeter load test definition file is included in: $REF_ARCH_HOME/loadtest/src/test/jmeter/ref_arch.jmx
-** This jmeter load test definition file can be viewed and manipulated via the JMeter GUI by:
-*** cd $REF_ARCH_HOME/loadtest
-** Notice that the default, OOB configuration is to spawn a single client that invokes a single test case
-** ./jmeter_gui.sh
-* Java Sampler
-** Also included is an example Java _Sampler_ at:  $REF_ARCH_HOME/loadtest/src/test/java/com/redhat/gpe/refarch/ref_arch_template/loadtest/ExampleJMeterClient.java
-** The use of a JMeter _sampler_ class is optional
-** cd $REF_ARCH_HOME/loadtest
-** mvn clean verify
-
-== To-Do
