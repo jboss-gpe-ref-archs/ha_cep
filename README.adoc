@@ -1,6 +1,8 @@
 :data-uri:
 :toc2:
 :ref_arch_doc: link:doc/ref_arch.adoc[project documentation]
+:haceppreso: link:http://www.slideshare.net/DuncanDoyle/doyle-h-0945highavailablitycepwithredhatjbossbrms3[High Available Complex Event Processing presentation]
+:hacepgitrepo: link:https://github.com/DuncanDoyle/RHSummit2014HaCepBrms[source code]
 
 image::doc/images/rhheader.png[width=900]
 
@@ -11,5 +13,10 @@ This is a reference architecture that demonstrates the implementation of a Highl
 
 == OVERVIEW:
 In order to achieve high availabality of the CEP engine, we run 2 CEP engine nodes in parallel. Both engines process the same events in the same order. The engines must advance in a deterministically way, so pseudo-clocks are advanced based on the timestamp of the events, and because these events are processed by both engines in the same order. This is one of the concepts used to keep the memory and the agenda of the engines in sync.
+
+== CREDITS
+This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
+
+In particular, Dunkin's {haceppreso} and {hacepgitrepo} have been highly leveraged
 
 This section should also link to the {ref_arch_doc}.
