@@ -1,6 +1,5 @@
 package org.jboss.ddoyle.rhsummit2014.hacepbrms.eventproducer;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
@@ -15,13 +14,8 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:duncan.doyle@redhat.com">Duncan Doyle</a>
  */
 public class Main {
-    
-    //private static final int EVENT_ROUTE_WAIT_TIME = 5000;
     private static final int EVENT_ROUTE_WAIT_TIME = 1000;
     
-    /**
-     * Logger.
-     */
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     
     private static Router eventRouter;
@@ -30,8 +24,6 @@ public class Main {
         LOGGER.info("Initializing Router.");
         eventRouter = new JmsRouter();
         
-        //String eventsFileUrl = Main.class.getClassLoader().getResource("events.csv").getFile();
-        //File eventsFile = new File(eventsFileUrl);
         InputStream eventsFileStream = Main.class.getClassLoader().getResourceAsStream("events.csv");
         
         LOGGER.info("Loading events from file.");

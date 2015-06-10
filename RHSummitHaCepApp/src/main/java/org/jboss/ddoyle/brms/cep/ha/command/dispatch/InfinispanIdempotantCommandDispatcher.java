@@ -7,7 +7,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.infinispan.commons.api.BasicCache;
-import org.jboss.ddoyle.brms.cep.ha.cdi.HotRod;
 import org.jboss.ddoyle.brms.cep.ha.cdi.Infinispan;
 import org.jboss.ddoyle.brms.cep.ha.command.executor.CommandExecutionService;
 import org.jboss.ddoyle.brms.cep.ha.command.executor.SimpleCommandExecutionService;
@@ -50,8 +49,8 @@ public class InfinispanIdempotantCommandDispatcher implements CommandDispatcher 
 
     @Override
     public void dispatch(Command command) {
-        LOGGER.trace("Dispatching Command to CommandExecutionService.");
         if (command instanceof IdempotentCommand) {
+        	LOGGER.debug("Following command is instanceof IdempotentCommand: "+command);
             commandExecutionService.execute(command);
         } else {
             Command oldCommand = commandsCache.putIfAbsent(command.getId(), command, COMMAND_TTL, COMMAND_TTL_TIMEUNIT);
@@ -59,7 +58,7 @@ public class InfinispanIdempotantCommandDispatcher implements CommandDispatcher 
                 LOGGER.debug("INSERTED COMMAND with ID: '" + command.getId() + "' into cache.\n");
                 commandExecutionService.execute(command);
             } else {
-                LOGGER.debug("DISCARDING COMMAND with ID: '" + command.getId() + "' as it has already been executed earlier.\n");
+                LOGGER.debug("DISREGARDING COMMAND with ID: '" + command.getId() + "' as it has already been executed earlier.\n");
             }
 
         }

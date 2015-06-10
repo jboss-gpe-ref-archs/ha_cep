@@ -41,53 +41,82 @@ In particular, its messaging broker:  HornetQ
 .. git client
 .. root access
 
+== Deployment Topology
+
+== Components
+This section of the guide provides an overview of the major components utilized in this `High Availability CEP project`.
+
+It is recommended that you initially skim through this section.
+Afterwards, feel free to <<clone>> and refer back to this section as you comb through the details of the source code and configuration files.
+
+=== *Bag Scanned* Events
+15 mock `bag scanned` events are provided in this project.
+Each event has one of the following statuses:
+
+. *CHECK_IN*
+. *SORTING*
+. *STAGING*
+. *LOADING*
+
+Also included in the event is an `EVENT ID`, `BagTag UUID` and a Date (which is specific to the millisecond).
+
+These `bag scanned` events are sent to a JMS topic managed by the JBoss EAP Hornetq broker called: `EventTopic`.
+
+Refer to the following source code:
+
+* `RHSummitHaCepEventProducer/src/main/resources/events.csv`
+* `RHSummitHaCepEventProducer/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/eventproducer/FactsLoader.java`
+* `RHSummitHaCepEventProducer/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/eventproducer/JmsRouter.java`
+
+=== CEP KnowledgeSession Mgmt
+
+=== *BaggageLostAtSorting* rule
+This project provides a single CEP rule called: `BaggageLostAtSorting`.
+The rule accepts events sent to an entry point called: `RHSummitStream`.
+
+The purpose of the rule is to identify `BagScannedEvents` whose status has not changed from `CHECK_IN` to `SORTING` within a 10 minute time window.
+
+A `SystemOutCommand` object is made from those `BagScannedEvents` that are identified by the `BaggageLostAtSorting` rule.
+
+The `SystemOutcommand` object is subsequently managed by the `CommandDispatchChannel`.
+
+Refer to the following source code:
+
+* `RHSummitHaCepRules/src/main/resources/rules/airport-rules.drl`
+
+=== JBoss Data Grid Dispatch
+`CommandDispatchChannel` is an `ApplicationScoped` CDI bean that implements the `org.kie.api.runtime.Channel` interface.
+`SystemOutCommand` objects (created in the consequence of the `BaggageLostAtSorting` rule) are sent to it by the CEP engine.
+
+The `CommandDispatchChannel` operates in conjunction with a different `ApplicationScoped` CDI bean called: `InfinispanidempotantCommandDispatcher`
+Collectively, these two beans are responsible for putting the `SystemOutCommand` object on an embedded JBoss Data Grid cache called: `commandsCache`.
+
+Refer to the following source code:
+
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/drools/channel/CommandDispatchChannel.java`
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/command/dispatch/InfinispanIdempotantCommandDispatcher.java`
+
+=== JBoss Data Grid
+
+In this project, JBoss Data Grid is used to store the `SystemOutCommand` objects in an idempotent manner.
+The name of the cache that stores the `SystemOutCommand` objects is called: `commandsCache`.
+
+The JDG cache runs embedded (aka:  Library Mode) in the CEP application.
+State transfer of data between nodes in the grid is via JDG `replication` mode.
+
+Refer to the following source code:
+
+* `RHSummitHaCepApp/src/main/resources/infinispan/infinispan.xml`
+
+
+=== SimpleCommandExecutionService
+`ApplicationScoped` CDI bean that executes the `SystemOutCommand`.
+
+The `SimpleCommandExecutionService` is invoked if its been determined that the `SystemOutCommand` is not already in the `commandsCache`.
+
 == Procedure
 
-=== Configure *IP Aliasing*
-
-This project assumes that multiple aliases on the `localhost` network interface of your workstation have been created.
-Doing so allows the different JVMs of this project to run on the same operating system without network port conflicts.
-
-`IP Aliasing` is straight-forward with a modern Linux distribution.
-
-. In your local workstation, open a terminal window and switch users to: `root`
-. View the `localhost` interface using the command: `ip addr list dev lo`
-+
------
-[root@carbon ~]# ip addr list dev lo
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
------
-. Add additional aliases:
-+
------
-ip addr add 127.0.0.2/24 dev lo
-ip addr add 127.0.0.3/24 dev lo
-ip addr add 127.0.0.4/24 dev lo
------
-. View the details `localhost` interface again.
-The new aliases should appear:
-+
------
-[root@carbon ~]# ip addr list dev lo
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet 127.0.0.2/24 scope host lo
-       valid_lft forever preferred_lft forever
-    inet 127.0.0.3/24 scope host secondary lo
-       valid_lft forever preferred_lft forever
-    inet 127.0.0.4/24 scope host secondary lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host
-       valid_lft forever preferred_lft forever
------
-
+[[clone]]
 === Clone this project
 
 . In your local worstation, open a terminal window and switch to a non-root operating system user.
@@ -102,6 +131,7 @@ A new directory called `ha_cep` should have been created.
 For the purposes of this documentation, the name _$LAB_HOME_ refers to the absolute path on your local workstation to this new _ha_cep_ directory.
 
 === Configure and Start JBoss EAP-6 Hornetq Broker
+In this project, a single JBoss EAP 6 JVM will be configured and started to provide messaging requirements.
 
 . From the Red Hat Support Portal, download the latest JBoss Enterprise Application Platform (EAP).
 +
@@ -133,23 +163,24 @@ tail -f target/eap.log
 === Configure Maven
 This project makes use of support Red Hat JBoss Maven repositories.
 Most Maven libraries can be obtained from the Red JBoss `techpreview` Maven repo at:
-
------
-http://maven.repository.redhat.com/techpreview/all/
------
+`http://maven.repository.redhat.com/techpreview/all/`
 
 The exception to this is the current use of JBoss Data Grid 6.5-Beta.
-The off-line Maven repository for JBoss Data Grid 6.5-Beta and be downloaded and unzipped to your local workstation.
+The off-line Maven repository for JBoss Data Grid 6.5-Beta is available from the Red Hat Support Portal and should be downloaded and unzipped to your local workstation.
 
 A sample Maven `settings.xml` file to support this project can be found at: `$LAB_HOME/demo/maven/jdg-offline-settings.xml`
 
-Copy this sample settings.xml file to your OS user's standard maven configuration directory:
-
+. Copy the sample `jdg-offline-settings.xml` file to your OS user's standard maven configuration directory:
++
 -----
 cp $LAB_HOME/demo/maven/jdg-offline-settings.xml ~/.m2
 -----
+. Read through contents of `~/.m2/jdg-offline-settings.xml` and make adjustments as indicated in that file.
 
 === Build project
+This project contains the source code to the various components that make up a highly available CEP deployment topology.
+As such, these components need to be built from source.
+
 . cd $LAB_HOME
 . execute:
 +
@@ -158,7 +189,20 @@ mvn clean compile -s ~/.m2/jdg-offline-settings.xml
 -----
 
 === Start CEP Nodes
-. cd $LAB_HOME/RHSummitHaCepApp
+
+==== Overview
+The CEP functionality is found in the subproject: `$LAB_HOME/RHSummitHaCepApp`.
+
+In this section of the lab, multiple standalone CEP JVMs will be started and the following will occur:
+
+. Each CEP node will reate a JMS connection to the Hornetq messaging broker of JBoss EAP 6.
+. Each CEP node will begin to consume events from the `EventTopic` managed in the Hornetq broker.
+. Each CEP node will discover other CEP nodes using UDP multi-cast
+. A TCP based JDG/Jgroups `Library-mode` cluster will be formed between the nodes that are discovered.
+. Each CEP node will create and manage a CEP knowledge session
+
+==== Procedure
+. cd `$LAB_HOME/RHSummitHaCepApp`
 . Start CEP node 1:
 +
 -----
@@ -172,17 +216,39 @@ mvn exec:java -s ~/.m2/jdg-offline-settings.xml -Drhsummit2014.hornetq.client.id
 
 === Start Event Producer Client
 
+. cd `$LAB_HOME/RHSummitHaCepEventProducer/`
+. start the CEP event producer
++
 -----
 mvn exec:java -s ~/.m2/jdg-offline-settings.xml
 -----
 
-* To test the replay behavior stop one of the CEP engines and start it again. The commands will be replied but not executed, all of them must be discarded.
+=== Test Replay Behavior
+
+. Stop one of the CEP engines and start it again.
++
+The commands will be replayed but not executed.
+
+== Questions
+. What is the name of the replicated cache ?
+. SimpleCommandFactory.getInsertCommand()
++
+What is the purpose of this function ?
+. ksession:  if fireUntilHalt is apparently not used, then what is?
+. @Infinispan : implemented by both InfinispanIdempotantCommandDispatcher and SimpleCommandExecutionService ?
+
+== TO-DO
+. *HA JMS*
++
+Hornetq JMS broker should be configured for HA
+
+. *JMX Console* to view entries in cache
 
 ifdef::showScript[]
 
 The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1 to 127.0.0.3 and the CEP node 2 to 127.0.0.4.
 
-== Architecture Components
+
 
 === UML Deployment Diagram
 
@@ -208,13 +274,7 @@ The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1
 
 ==== Hot-Rod client
 
-=== JBoss Data Grid
-==== Purpose
-Purpose of JDG is to store the commands generated in the RHS to have idempotent behaviour when the engine restarts.
-It's used to implement the replay executions.
 
-==== JDG Library Mode Deployment Topology
-==== JDG Replication Mode State Transfer
 
 === Command Object
 Need to be identical so as to prevent duplicate commands.
@@ -226,5 +286,50 @@ Command ID is composed of:   rule package, rule name and event uuid
 
 In a case of recovery commands in the cache would be read again but discarded since they already are in the cache. This can be better checked by just checking the last ID in the cache and the ID from the durable topic which have been read again in the recovery process so no need to check all of them and discard.
 
+
+=== Configure *IP Aliasing*
+
+This project assumes that multiple aliases on the `localhost` network interface of your workstation have been created.
+Doing so allows the different JVMs of this project to run on the same operating system without network port conflicts.
+
+`IP Aliasing` is straight-forward with a modern Linux distribution.
+
+. In your local workstation, open a terminal window and switch users to: `root`
+. View the `localhost` interface using the command: `ip addr list dev lo`
++
+-----
+[root@carbon ~]# ip addr list dev lo
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+inet 127.0.0.1/8 scope host lo
+valid_lft forever preferred_lft forever
+inet6 ::1/128 scope host
+valid_lft forever preferred_lft forever
+-----
+. Add additional aliases:
++
+-----
+ip addr add 127.0.0.2/24 dev lo
+ip addr add 127.0.0.3/24 dev lo
+ip addr add 127.0.0.4/24 dev lo
+-----
+. View the details `localhost` interface again.
+The new aliases should appear:
++
+-----
+[root@carbon ~]# ip addr list dev lo
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+inet 127.0.0.1/8 scope host lo
+valid_lft forever preferred_lft forever
+inet 127.0.0.2/24 scope host lo
+valid_lft forever preferred_lft forever
+inet 127.0.0.3/24 scope host secondary lo
+valid_lft forever preferred_lft forever
+inet 127.0.0.4/24 scope host secondary lo
+valid_lft forever preferred_lft forever
+inet6 ::1/128 scope host
+valid_lft forever preferred_lft forever
+-----
 
 endif::showScript[]

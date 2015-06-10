@@ -18,9 +18,6 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    /**
-     * Weld CDI container.
-     */
     private static Weld weld;
 
     public static void main(String[] args) {

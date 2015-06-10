@@ -62,8 +62,10 @@ public class SessionProducer {
             CommandDispatchChannel commandDispatcherChannel, SimpleCommandFactory commandFactory) {
 
         kieServices = KieServices.Factory.get();
+        boolean loadKSessionFromFile = Boolean.parseBoolean(System.getProperty(LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME));
+        LOGGER.info("SessionProducer() "+LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME+" = "+loadKSessionFromFile);
 
-        if (Boolean.parseBoolean(System.getProperty(LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME))) {
+        if(loadKSessionFromFile) {
             String kieSessionFile = System.getProperty(SERIALIZED_KIE_SESSION_FILE_PROPERTY_NAME);
             if (kieSessionFile == null || "".equals(kieSessionFile)) {
                 String errorMessage = "The BRSM CEP HA system has been configured to load a serialized KieSession from a file, but no file has been specified. Either specify a file using the '"
