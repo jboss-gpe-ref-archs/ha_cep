@@ -81,7 +81,7 @@ fi
 
 STARTUP_WAIT=30
 # This is just a setup-script. We don't need an extensive console-log.
-JBOSS_CONSOLE_LOG=jboss-setup-console.log
+JBOSS_CONSOLE_LOG=target/jboss-setup-console.log
 
 echo "Source profile $SOURCE_PROFILE"
 echo "Target profile $TARGET_PROFILE"

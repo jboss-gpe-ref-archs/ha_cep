@@ -5,5 +5,10 @@
 #
 # author: duncan.doyle@redhat.com
 #
+
+batch
+
 /subsystem=messaging/hornetq-server=default/jms-topic=EventTopic:add(entries=["topic/event", "java:jboss/exported/topic/event"])
+
+run-batch
 

@@ -1,9 +1,9 @@
 :data-uri:
 :rhtlink: link:https://www.redhat.com[Red Hat]
 :mwlaboverviewsetup: link:http://people.redhat.com/jbride/labsCommon/setup.html[Middleware Lab Overview and Set-up]
-:brmsproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_BRMS/[Red Hat JBoss BRMS 6 product]
-:datagridproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_Data_Grid/[Red Hat JBoss Data Grid product]
-:eapproduct: link:https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/[JBoss Enterprise Application Platform product]
+:brmsproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_BRMS/[Red Hat JBoss BRMS 6]
+:datagridproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_Data_Grid/[Red Hat JBoss Data Grid]
+:eapproduct: link:https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/[JBoss Enterprise Application Platform]
 :haceppreso: link:http://www.slideshare.net/DuncanDoyle/doyle-h-0945highavailablitycepwithredhatjbossbrms3[High Available Complex Event Processing presentation]
 :hacepgitrepo: link:https://github.com/DuncanDoyle/RHSummit2014HaCepBrms[source code]
 
@@ -15,12 +15,7 @@ Configure a highly available JBoss BRMS CEP deployment topology
 :numbered:
 
 == Overview
-This document proposes a solution of high availability for CEP engines and address some challenges when combining JBoss BRMS CEP with HA, like the following:
-
-* Session for CEP are:
-** Stateful, state must be persisted.
-** Used by all Events, sessions are not partitioned by event type, user or session-id.
-** Memory consumption, sessions can have days, due to the events correlation behavior.
+This document proposes a solution of high availability for Complex Event Processing engines:
 
 == Credits
 This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
@@ -29,23 +24,163 @@ In particular, Dunkin's {haceppreso} and {hacepgitrepo} have been highly leverag
 
 == Pre-Requisites
 
-The remainder of this documentation provides instructions for installation, configuration and execution of this reference architecture in Red Hat's Partner Demo System.
-The following is a list of pre-requisites:
+The following is a list of pre-requisites needed to execute this project:
 
-. OPENTLC-SSO credentials
-+
-`OPENTLC-SSO` user credentials are used to log into the Red Hat Partner Demo System (PDS).
-If you do not currently have an `OPENTLC-SSO` userId, please email: `OPEN-program@redhat.com`.
-
-. Familiarity with Partner Demo System
-+
-If you are not already familiar with Red Hat's `Partner Demo System`, please execute what is detailed in the {mwlaboverviewsetup} guide.
-Doing so will ensure that you are proficient with the tooling and workflow needed to complete this reference architecture in an OpenShift Platform as a Service environment.
-
+. Familiarity with Complex Event Processing
 . Familiarity with {brmsproduct}
-. Complex Event Processing
 . Familiarity with {datagridproduct}
 . Familiarity with {eapproduct}
++
+In particular, its messaging broker:  HornetQ
+. Access to the Red Hat Support Portal and entitlements to Red Hat JBoss middleware.
+. Workstation with the following specs:
+.. 4G RAM
+.. 4 CPU cores
+.. JDK 7 (or more recent)
+.. Maven 3.3.1 (or more recent)
+.. git client
+.. root access
+
+== Procedure
+
+=== Configure *IP Aliasing*
+
+This project assumes that multiple aliases on the `localhost` network interface of your workstation have been created.
+Doing so allows the different JVMs of this project to run on the same operating system without network port conflicts.
+
+`IP Aliasing` is straight-forward with a modern Linux distribution.
+
+. In your local workstation, open a terminal window and switch users to: `root`
+. View the `localhost` interface using the command: `ip addr list dev lo`
++
+-----
+[root@carbon ~]# ip addr list dev lo
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+-----
+. Add additional aliases:
++
+-----
+ip addr add 127.0.0.2/24 dev lo
+ip addr add 127.0.0.3/24 dev lo
+ip addr add 127.0.0.4/24 dev lo
+-----
+. View the details `localhost` interface again.
+The new aliases should appear:
++
+-----
+[root@carbon ~]# ip addr list dev lo
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet 127.0.0.2/24 scope host lo
+       valid_lft forever preferred_lft forever
+    inet 127.0.0.3/24 scope host secondary lo
+       valid_lft forever preferred_lft forever
+    inet 127.0.0.4/24 scope host secondary lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+-----
+
+=== Clone this project
+
+. In your local worstation, open a terminal window and switch to a non-root operating system user.
+. Clone this project from github:
++
+-----
+git clone https://github.com/jboss-gpe-ref-archs/ha_cep.git
+-----
++
+A new directory called `ha_cep` should have been created.
++
+For the purposes of this documentation, the name _$LAB_HOME_ refers to the absolute path on your local workstation to this new _ha_cep_ directory.
+
+=== Configure and Start JBoss EAP-6 Hornetq Broker
+
+. From the Red Hat Support Portal, download the latest JBoss Enterprise Application Platform (EAP).
++
+At the time of this writing, (June, 2015) JBoss EAP 6.4 is the latest and subsequently the download is:  `jboss-eap-6.4.0.zip`.
+. Move this download to the following directory: `$LAB_HOME/demo/installation_zips`
+. Change directory to `$LAB_HOME/demo` and execute:
++
+-----
+./setup-scripts/buildJBossEap-HaCepBrms-Demo-Environment.sh
+-----
++
+Executing this script does the following:
+
+.. Unzips JBoss EAP in the `demo/target` directory
+.. Creates a new JBoss EAP server configuration file called: `hacepbrms-standalone-full.xml`
+.. Creates an `EventTopic` JMS topic
+
+. From `$LAB_HOME/demo`, execute the following to start JBoss EAP as a background OS process:
++
+-----
+nohup target/jboss-eap-6.4/bin/standalone.sh -c hacepbrms-standalone-full.xml -b 127.0.0.1 -bmanagement 127.0.01 > target/eap.log 2>&1 &
+-----
+. If interested, the log file for this JBoss EAP background process can be tailed from the `$LAB_HOME/demo` directory as follows:
++
+-----
+tail -f target/eap.log
+-----
+
+=== Configure Maven
+This project makes use of support Red Hat JBoss Maven repositories.
+Most Maven libraries can be obtained from the Red JBoss `techpreview` Maven repo at:
+
+-----
+http://maven.repository.redhat.com/techpreview/all/
+-----
+
+The exception to this is the current use of JBoss Data Grid 6.5-Beta.
+The off-line Maven repository for JBoss Data Grid 6.5-Beta and be downloaded and unzipped to your local workstation.
+
+A sample Maven `settings.xml` file to support this project can be found at: `$LAB_HOME/demo/maven/jdg-offline-settings.xml`
+
+Copy this sample settings.xml file to your OS user's standard maven configuration directory:
+
+-----
+cp $LAB_HOME/demo/maven/jdg-offline-settings.xml ~/.m2
+-----
+
+=== Build project
+. cd $LAB_HOME
+. execute:
++
+-----
+mvn clean compile -s ~/.m2/jdg-offline-settings.xml
+-----
+
+=== Start CEP Nodes
+. cd $LAB_HOME/RHSummitHaCepApp
+. Start CEP node 1:
++
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml
+-----
+. Start CEP node 2:
++
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml -Drhsummit2014.hornetq.client.id=rhsummit2014-hq-client-2
+-----
+
+=== Start Event Producer Client
+
+-----
+mvn exec:java -s ~/.m2/jdg-offline-settings.xml
+-----
+
+* To test the replay behavior stop one of the CEP engines and start it again. The commands will be replied but not executed, all of them must be discarded.
+
+ifdef::showScript[]
+
+The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1 to 127.0.0.3 and the CEP node 2 to 127.0.0.4.
 
 == Architecture Components
 
@@ -55,7 +190,6 @@ Doing so will ensure that you are proficient with the tooling and workflow neede
 
 ===  Messaging Broker
 
-====  Purpose
 ====  Hornetq vs Apache Kafka discussion
 ====  HA Hornetq
 
@@ -92,95 +226,5 @@ Command ID is composed of:   rule package, rule name and event uuid
 
 In a case of recovery commands in the cache would be read again but discarded since they already are in the cache. This can be better checked by just checking the last ID in the cache and the ID from the durable topic which have been read again in the recovery process so no need to check all of them and discard.
 
-== Procedure
-* For the purposes of this documentation, the name _$REF_ARCH_HOME_ refers to the root directory of this reference architecture.
 
-=== Creation of 2 instances of EAP6 in OSE + datagrid (they should be in cluster)
-=== Configure security, jms topic and roles.
-=== Configure producer to run in local student machine (build process)
-=== When a node crashes it replay all commands until it gets updated.
-
-== Steps to Reproduce the Environment
-
-NOTE: The steps listed below are just to reproduce the environment with the solution working. Steps need to be polished and migrated to be OSE compliant.
-
-Your system needs to be multi-homed. The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1 to 127.0.0.3 and the CEP node 2 to 127.0.0.4.
-
-
-
-=== Clone this project
-
-=== Configure and Start JBoss EAP-6.4 Hornetq Broker
-
- Download the `jboss-eap-6.3.0.zip` and `jboss-eap-6.3.3-patch.zip` from the *Red Hat Customer Support Portal* and place them in the `demo/installation_zips` directory.
-* In the `demo` directory, run the `buildJBossEap-HaCepBrms-Demo-Environment.sh` script. This will setup JBoss EAP 6.3.3 in the `demo/target` directory.
-
-NOTE: This last step will fail trying to connect the controller, but it will create the admin user/password and guest user/password. I solved doing all the steps manually as follows.
-
-* After the execution of the `buildJBossEap-HaCepBrms-Demo-Environment.sh` script, run the `startJBossEAP.sh` script to start JBoss EAP. Open a new terminal move to `RHSummit2014HaCepBrms/demo/target/jboss-eap-6.3/bin`and connect to the controller manually by executing `./jboss-cli.sh -c`.
-* In the prompt `[standalone@localhost:9999 /]` apply the patch by executing `patch apply /path/to/project/RHSummit2014HaCepBrms/demo/installation_zips/jboss-eap-6.3.3-patch.zip`. The return should be:
-
-[source,json]
-----
-{
-    "outcome" : "success",
-    "response-headers" : {
-        "operation-requires-restart" : true,
-        "process-state" : "restart-required"
-    }
-}
-----
-
-* Now execute the command to create the Durable Topic:
-
------
-/subsystem=messaging/hornetq-server=default/jms-topic=EventTopic:add(entries=["topic/event", "java:jboss/exported/topic/event"])
------
-
-The return should be:
-
-[source,json]
------
-{"outcome" => "success"}
------
-
-* The `guest` role must have the right permissions, so execute:
-
------
-/subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=create-durable-queue, value=true)
------
-
-And then:
-
------
-/subsystem=messaging/hornetq-server=default/security-setting=#/role=guest:write-attribute(name=delete-durable-queue, value=true)
------
-
-=== Build project
-. cd $LAB_HOME
-. execute:
-+
------
-mvn clean compile -s ~/.m2/jdg-offline-settings.xml
------
-
-=== Start CEP Nodes
-. cd $LAB_HOME/RHSummitHaCepApp
-. Start CEP node 1:
-+
------
-mvn exec:java -s ~/.m2/jdg-offline-settings.xml
------
-. Start CEP node 2:
-+
------
-mvn exec:java -s ~/.m2/jdg-offline-settings.xml -Drhsummit2014.hornetq.client.id=rhsummit2014-hq-client-2
------
-
-=== Start Event Producer Client
-
------
-mvn exec:java -s ~/.m2/jdg-offline-settings.xml
------
-
-* To test the replay behavior stop one of the CEP engines and start it again. The commands will be replied but not executed, all of them must be discarded.
+endif::showScript[]
