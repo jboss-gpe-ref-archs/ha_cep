@@ -1,4 +1,6 @@
 :data-uri:
+:toc-placement: preamble
+:toc: manual
 :rhtlink: link:https://www.redhat.com[Red Hat]
 :mwlaboverviewsetup: link:http://people.redhat.com/jbride/labsCommon/setup.html[Middleware Lab Overview and Set-up]
 :brmsproduct: link:https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_BRMS/[Red Hat JBoss BRMS 6]
