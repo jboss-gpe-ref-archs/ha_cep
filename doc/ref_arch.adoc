@@ -215,19 +215,49 @@ mvn exec:java -s ~/.m2/jdg-offline-settings.xml -Drhsummit2014.hornetq.client.id
 -----
 
 === Start Event Producer Client
+At this point, you should have a JBoss EAP/HornetQ and 2 CEP JVMs running on your local workstation.
+The final JVM needed in this project is the `Bag Scanned Event` producer.
+This JVM sends messages to the `EventTopic` managed by the Hornetq broker.
 
+. Open a new terminal window
 . cd `$LAB_HOME/RHSummitHaCepEventProducer/`
 . start the CEP event producer
 +
 -----
 mvn exec:java -s ~/.m2/jdg-offline-settings.xml
 -----
++
+You'll notice that output of this JVM indicates that 15 events were sent to the JMS broker.
+
+=== Review Results
+
+With the 15 events having been processed, study and compare the output of both CEP nodes.
+Notice that for a given `Command` object, one node will log the following"
+
+-----
+DEBUG INSERTED COMMAND with ID: 'org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]' into cache.
+DEBUG EXECUTING COMMAND: org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]
+Command-ID: org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]
+Message: Baggage lost at sorting. BagTag ID: 8
+-----
+
+and the other node will log this:
+
+-----
+DEBUG DISREGARDING COMMAND with ID: 'org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]' as it has already been executed earlier.
+-----
+
+What has occurred is that the rules of both CEP nodes have fired in an identical deterministic manner.
+However, the Command object from only one node has actually executed.
+
+Congratulations!  You have now set up a highly available CEP deployment topology.
 
 === Test Replay Behavior
 
 . Stop one of the CEP engines and start it again.
+. Resend the original 15 `Bag Scanned Events`
 +
-The commands will be replayed but not executed.
+Notice that the `BaggageLostAtSorting` rule will fire as before however all of the events will be ignored because they already exist in the cache.
 
 == Questions
 . What is the name of the replicated cache ?
@@ -271,10 +301,6 @@ The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1
 ** rule engine is fired
 ** create the command in the RHS
 ** add that to cache.
-
-==== Hot-Rod client
-
-
 
 === Command Object
 Need to be identical so as to prevent duplicate commands.
