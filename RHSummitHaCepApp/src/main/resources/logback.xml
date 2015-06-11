@@ -24,7 +24,7 @@
         
     <logger name ="org.jboss.ddoyle.brms.cep.ha.command" level="debug" />
     <logger name ="org.jboss.ddoyle.brms.cep.ha.drools.session" level="info" />
-    <logger name ="org/jboss/ddoyle/brms/cep/ha/infinispan" level="info" />
+    <logger name ="org.jboss.ddoyle.brms.cep.ha.input.messaging" level="info" />
     
     <root level="warn"><!-- TODO We probably want to set default level to warn instead -->
         <appender-ref ref="consoleAppender"/>

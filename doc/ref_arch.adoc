@@ -17,7 +17,8 @@ Configure a highly available JBoss BRMS CEP deployment topology
 :numbered:
 
 == Overview
-This document proposes a solution of high availability for Complex Event Processing engines:
+This document reviews a solution for high availability of Red Hat JBoss BRMS Complex Event Processing engines.
+It provides both an overview of the solutions various components and step-by-step instructions to reproduce the solution.
 
 == Credits
 This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
@@ -71,6 +72,22 @@ Refer to the following source code:
 * `RHSummitHaCepEventProducer/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/eventproducer/JmsRouter.java`
 
 === CEP KnowledgeSession Mgmt
+Each CEP node in the HA cluster makes use of a `stateful` Drools knowledge session.
+This stateful Drools ksession is instantiated and managed by two classes in particular: `SessionManager` and `SessionProducer`.
+
+One of the first tasks that occurs during creation of the ksession is that JMS consumer is started.
+This JMS consumer listens for and consumes `BagScannedEvent` messages from the `EventTopic` JMS destination.
+Upon consumption, inserting of the event/fact into the ksession is delegated to class called `PseudoClockFactInserter`.
+
+The `PseudoClockFactInserter` inserts facts into the ksession in a deterministic manner.
+In particular, it manages the ksession clock and fires the rules with every event.
+
+Refer to the following source code:
+
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/drools/session/SessionManager.java`
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/drools/session/SessionProducer.java`
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/input/messaging/EventListener.java`
+* `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/input/PseudoClockFactInserter.java`
 
 === *BaggageLostAtSorting* rule
 This project provides a single CEP rule called: `BaggageLostAtSorting`.
@@ -104,7 +121,10 @@ In this project, JBoss Data Grid is used to store the `SystemOutCommand` objects
 The name of the cache that stores the `SystemOutCommand` objects is called: `commandsCache`.
 
 The JDG cache runs embedded (aka:  Library Mode) in the CEP application.
-State transfer of data between nodes in the grid is via JDG `replication` mode.
+State transfer of data between nodes is both `replicated` to all nodes in the cluster and is `synchroneous`.
+
+These attributes of the JDG cache are critical to this project.
+They ensure that the `SystemOutCommand` objects are fired with a once-and-only-once guarantee across CEP nodes in the high avaliability cluster.
 
 Refer to the following source code:
 
@@ -114,14 +134,14 @@ Refer to the following source code:
 === SimpleCommandExecutionService
 `ApplicationScoped` CDI bean that executes the `SystemOutCommand`.
 
-The `SimpleCommandExecutionService` is invoked if its been determined that the `SystemOutCommand` is not already in the `commandsCache`.
+The `SimpleCommandExecutionService` executes on a `SystemOutCommand` once its been previously determined that the `SystemOutCommand` object is not already in the `commandsCache`.
 
 == Procedure
 
 [[clone]]
 === Clone this project
 
-. In your local worstation, open a terminal window and switch to a non-root operating system user.
+. In your local workstation, open a terminal window and switch to a non-root operating system user.
 . Clone this project from github:
 +
 -----
@@ -262,12 +282,9 @@ Congratulations!  You have now set up a highly available CEP deployment topology
 Notice that the `BaggageLostAtSorting` rule will fire as before however all of the events will be ignored because they already exist in the cache.
 
 == Questions
-. What is the name of the replicated cache ?
-. SimpleCommandFactory.getInsertCommand()
+. @Infinispan
 +
-What is the purpose of this function ?
-. ksession:  if fireUntilHalt is apparently not used, then what is?
-. @Infinispan : implemented by both InfinispanIdempotantCommandDispatcher and SimpleCommandExecutionService ?
+Implemented by both InfinispanIdempotantCommandDispatcher and SimpleCommandExecutionService ?
 
 == TO-DO
 . *HA JMS*

@@ -149,10 +149,8 @@ public class SessionManager implements SessionManagerMBean {
     }
 
     public void startEventListeners() {
-        //Thread eventTopicListenerThread = new Thread(new EventListenerRunnable(eventListener));
         LOGGER.info("Starting EventListener.");
         executorService.submit(new EventListenerRunnable(eventListener));
-        //eventTopicListenerThread.start();
     }
 
     public void stopEventListeners() {

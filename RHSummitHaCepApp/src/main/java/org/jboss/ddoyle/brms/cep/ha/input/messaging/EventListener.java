@@ -73,7 +73,7 @@ public class EventListener {
                     "Client-ID property '" + CONNECTION_CLIENT_ID_PROPERTY_NAME + "' is mandatory to properly create a durable topic subscriber. Please configure this system property.");
         }
 
-        LOGGER.info("Initializing EventListener: " + this);
+        LOGGER.info("Initializing EventListener: " + this+"\n\tfactInserter = "+factInserter);
 
         // Do a JNDI lookup of the remote topic.
         try {

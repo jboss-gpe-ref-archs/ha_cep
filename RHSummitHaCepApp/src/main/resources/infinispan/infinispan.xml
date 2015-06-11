@@ -15,7 +15,6 @@
 
 	<!-- Default Cache Configuration. -->
 	<default>
-		<!-- <customInterceptors> <interceptor position="FIRST" class="org.jboss.ddoyle.brms.cep.ha.infinispan.DummyInterceptor"></interceptor> </customInterceptors> -->
 		<locking concurrencyLevel="100" lockAcquisitionTimeout="1000" />
 		<jmxStatistics enabled="true" />
 		<clustering mode="replication">

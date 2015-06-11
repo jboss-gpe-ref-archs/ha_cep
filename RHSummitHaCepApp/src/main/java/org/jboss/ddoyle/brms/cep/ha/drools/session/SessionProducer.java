@@ -63,7 +63,7 @@ public class SessionProducer {
 
         kieServices = KieServices.Factory.get();
         boolean loadKSessionFromFile = Boolean.parseBoolean(System.getProperty(LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME));
-        LOGGER.info("SessionProducer() "+LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME+" = "+loadKSessionFromFile);
+        LOGGER.info("SessionProducer() \n\t"+LOAD_KIE_SESSION_FROM_FILE_PROPERTY_NAME+" = "+loadKSessionFromFile+"\n\thaWmEventListener = "+haWmEventListener+"\n\tcommandDispatchChannel = "+commandDispatcherChannel);
 
         if(loadKSessionFromFile) {
             String kieSessionFile = System.getProperty(SERIALIZED_KIE_SESSION_FILE_PROPERTY_NAME);
