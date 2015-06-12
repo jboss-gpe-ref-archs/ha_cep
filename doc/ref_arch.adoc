@@ -12,7 +12,7 @@
 = Highly Available JBoss BRMS CEP
 
 *Goal*
-Configure a highly available JBoss BRMS CEP deployment topology
+Configure a highly available JBoss BRMS CEP solution
 
 :numbered:
 
@@ -30,7 +30,7 @@ In particular, baggage status events must be processed by the solution in a reli
 == Credits
 This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
 
-In particular, Dunkin's {haceppreso} and {hacepgitrepo} have been highly leveraged.
+In particular, Dunkin's {haceppreso} and {hacepgitrepo} are the basis of this project.
 
 == Pre-Requisites
 
@@ -162,7 +162,7 @@ Refer to the following source code:
 * `RHSummitHaCepCommands/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/command/CommandIdBuilder.java`
 * `RHSummitHaCepCommands/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/command/CommandIdGenerator.java`
 
-=== JBoss Data Grid Dispatch
+=== Command Dispatch
 `SystemOutCommand` objects (created in the consequence of the `BaggageLostAtSorting` rule) are delegated to the `CommandDispatchChannel` object for further processing.
 `CommandDispatchChannel` is an `ApplicationScoped` CDI bean that implements the `org.kie.api.runtime.Channel` interface.
 
@@ -208,7 +208,7 @@ Refer to the following source code:
 * `RHSummitHaCepApp/src/main/resources/infinispan/infinispan.xml`
 
 
-=== SimpleCommandExecutionService
+=== Command Execution
 `ApplicationScoped` CDI bean that executes the `SystemOutCommand`.
 
 The `SimpleCommandExecutionService` executes on a `SystemOutCommand` once its been previously determined that the `SystemOutCommand` object is not already in the `commandsCache`.
@@ -229,7 +229,7 @@ A new directory called `ha_cep` should have been created.
 +
 For the purposes of this documentation, the name _$LAB_HOME_ refers to the absolute path on your local workstation to this new _ha_cep_ directory.
 
-=== Configure and Start JBoss EAP-6 Hornetq Broker
+=== Configure and Start JBoss EAP6 Hornetq Broker
 In this project, a single JBoss EAP 6 JVM will be configured and started to provide messaging requirements.
 
 . From the Red Hat Support Portal, download the latest JBoss Enterprise Application Platform (EAP).
@@ -343,13 +343,13 @@ Message: Baggage lost at sorting. BagTag ID: 8
 and the other node will log this:
 
 -----
-DEBUG DISREGARDING COMMAND with ID: 'org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]' as it has already been executed earlier.
+DEBUG IGNORING COMMAND with ID: 'org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[14]' as it has already been executed earlier.
 -----
 
 What has occurred is that the rules of both CEP nodes have fired in an identical deterministic manner.
 However, the Command object from only one node has actually executed.
 
-Congratulations!  You have now set up a highly available CEP deployment topology.
+Congratulations!  You have now set up and tested a highly available complex event processing solution.
 
 === Test Replay Behavior
 
@@ -364,11 +364,15 @@ Notice that the `BaggageLostAtSorting` rule will fire as before however all of t
 Implemented by both InfinispanIdempotantCommandDispatcher and SimpleCommandExecutionService ?
 
 == TO-DO
+. *Session Storage*
++
+KSession should be stored to disk and replayed if/when failure occurs
 . *HA JMS*
 +
 Hornetq JMS broker should be configured for HA
 
 . *JMX Console* to view entries in cache
+
 
 ifdef::showScript[]
 
