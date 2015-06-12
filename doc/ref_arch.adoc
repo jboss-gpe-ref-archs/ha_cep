@@ -28,9 +28,9 @@ Because visibility of baggage is of critical importance at an airport, one requi
 In particular, baggage status events must be processed by the solution in a reliable and deterministic manner even during CEP node failure.
 
 == Credits
-This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
+This project builds upon the outstanding contributions of Duncan Doyle and the Red Hat BRMS engineering team.
 
-In particular, Dunkin's {haceppreso} and {hacepgitrepo} are the basis of this project.
+In particular, Duncan's {haceppreso} and {hacepgitrepo} are the basis of this project.
 
 == Pre-Requisites
 
