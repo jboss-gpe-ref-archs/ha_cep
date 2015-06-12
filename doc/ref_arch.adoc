@@ -53,6 +53,9 @@ In particular, its messaging broker:  HornetQ
 
 == Deployment Topology
 
+.ha_cep deployment topology
+image::images/ha_cep.png[]
+
 == Components
 This section of the guide provides an overview of the major components utilized in this `High Availability CEP project`.
 
