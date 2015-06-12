@@ -17,8 +17,15 @@ Configure a highly available JBoss BRMS CEP deployment topology
 :numbered:
 
 == Overview
-This document reviews a solution for high availability of Red Hat JBoss BRMS Complex Event Processing engines.
-It provides both an overview of the solutions various components and step-by-step instructions to reproduce the solution.
+This document reviews a solution for high availability of Red Hat JBoss BRMS Complex Event Processing (CEP) engines.
+It provides both an overview of the solution's various components and step-by-step instructions to reproduce the solution.
+
+The mock business scenario utilized in this project is that of baggage handling at an airport.
+Baggage is tracked throughout its processing at the airport and as it reaches various check-points, events are produced and sent to the BRMS CEP engines.
+Most importantly, the CEP based solution is able to identify if and when a particular bag has been lost.
+
+Because visibility of baggage is of critical importance at an airport, one requirement of the CEP based baggage tracking system is that it be highly available.
+In particular, baggage status events must be processed by the solution in a reliable and deterministic manner even during CEP node failure.
 
 == Credits
 This project builds upon the outstanding contributions of Dunkin Doyle and the Red Hat BRMS engineering team.
@@ -61,7 +68,7 @@ Each event has one of the following statuses:
 . *STAGING*
 . *LOADING*
 
-Also included in the event is an `EVENT ID`, `BagTag UUID` and a Date (which is specific to the millisecond).
+Also included in the event is an `EVENT ID`, `BagTag UUID` and a Date (specific to the millisecond).
 
 These `bag scanned` events are sent to a JMS topic managed by the JBoss EAP Hornetq broker called: `EventTopic`.
 
@@ -71,18 +78,42 @@ Refer to the following source code:
 * `RHSummitHaCepEventProducer/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/eventproducer/FactsLoader.java`
 * `RHSummitHaCepEventProducer/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/eventproducer/JmsRouter.java`
 
-=== CEP KnowledgeSession Mgmt
+=== CEP Engine
+
+==== Knowledge Session Mgmt
 Each CEP node in the HA cluster makes use of a `stateful` Drools knowledge session.
-This stateful Drools ksession is instantiated and managed by two classes in particular: `SessionManager` and `SessionProducer`.
+This stateful Drools ksession is instantiated and managed by two classes: `SessionManager` and `SessionProducer`.
 
-One of the first tasks that occurs during creation of the ksession is that JMS consumer is started.
-This JMS consumer listens for and consumes `BagScannedEvent` messages from the `EventTopic` JMS destination.
-Upon consumption, inserting of the event/fact into the ksession is delegated to class called `PseudoClockFactInserter`.
 
+==== JMS Event Listener
+One of the first tasks that occurs during creation of the ksession is that a single JMS consumer is started.
+This JMS consumer listens for and consumes `BagScannedEvent` messages from the JMS destination: `EventTopic`.
+
+Upon consumption, inserting of the event/fact into the ksession is delegated to a class called `PseudoClockFactInserter`.
 The `PseudoClockFactInserter` inserts facts into the ksession in a deterministic manner.
-In particular, it manages the ksession clock and fires the rules with every event.
+In particular, it fires the rules and advances its Drools `pseudo` clock with the consumption of every event.
 
-Refer to the following source code:
+==== Firing of Rules
+
+Many simple complex event processing examples make use of `ksession.fireUntilHalt()` function.
+This `fireUntilHalt` function delegates the rule firing to the Drools ksession and is very convenient.
+However, the behavior of the `fireUntilHalt` function is not deterministic across different CEP engines in a cluster.
+With `fireUntilHalt`, the actual firing of rules may occur with the introduction of a varying amount of facts into working memory.
+
+In this project, firing of rules occurs just after insertion of every event/fact into working memory.
+Other strategies for firing of rules are possible (ie: after a pre-determined batch size of events or `poison-pills`).
+Duncan explains these strategies in his {haceppreso}.
+
+==== Clock Mgmt
+An important strategy in this project is to make use of a Drools `pseudo` clock rather than the hardware's real-time clock.
+A `pseudo` clock can be controlled and is a requirement to keep identical agendas / working memory from different ksessions executing on different CEP nodes in the cluster.
+Correspondingly, this allows for the replay of previous events in a deterministric manner.
+Replay of previous events is important for a CEP node that is either new to the cluster or re-joins the cluster due to previous failure.
+
+At CEP node start-up, the ksession's pseudo-clock is initially set to the Unix epoch time: Jan 1, 1970 00:00:00 UTC.
+The pseudo clock is continuously advanced with the consumption of each event based on the event's timestamp.
+
+==== Source Code
 
 * `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/drools/session/SessionManager.java`
 * `RHSummitHaCepApp/src/main/java/org/jboss/ddoyle/brms/cep/ha/drools/session/SessionProducer.java`
@@ -95,20 +126,67 @@ The rule accepts events sent to an entry point called: `RHSummitStream`.
 
 The purpose of the rule is to identify `BagScannedEvents` whose status has not changed from `CHECK_IN` to `SORTING` within a 10 minute time window.
 
-A `SystemOutCommand` object is made from those `BagScannedEvents` that are identified by the `BaggageLostAtSorting` rule.
 
-The `SystemOutcommand` object is subsequently managed by the `CommandDispatchChannel`.
+In this HA CEP solution, execution of business logic in the right-hand side of the rule is done in a deterministic manner.
+In particular, the business logic is not hard coded in the right-hand side of the rule.
+Instead, a uniquely identifiable `Command` object is created.
+Execution of this `Command` object is delegated to other functionality whose responsibility it is to ensure that the command is fired once-and-only-once across the HA CEP cluster.
 
 Refer to the following source code:
 
 * `RHSummitHaCepRules/src/main/resources/rules/airport-rules.drl`
 
+=== SystemOutCommand
+If and when the rule fires, a new `SystemOutCommand` object is created.
+
+For the purposes of this demo project, the `SystemOutCommand` object simply logs a message to output.
+Real-world business applications would likely make use of a `Command` object that invokes business logic.
+
+The identifier of the `SystemOutCommand` must be unique and deterministically computed across different CEP nodes in the cluster.
+In this project, the identifier of the `SystemOutCommand` is a concatentation of the following:
+
+. *rule package name*
+. *ruleId*
+. *rule name*
+. *event id*
+
+An example command identifier is as follows:
+
+`org.jboss.ddoyle.rhsummit2014.bags:BaggageLostAtSorting:BaggageLostAtSorting-[10]`
+
+After creation, the `SystemOutcommand` object is delegated for further processing to the `CommandDispatchChannel`.
+
+Refer to the following source code:
+
+* `RHSummitHaCepCommands/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/command/SimpleCommandFactory.java`
+* `RHSummitHaCepCommands/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/command/CommandIdBuilder.java`
+* `RHSummitHaCepCommands/src/main/java/org/jboss/ddoyle/rhsummit2014/hacepbrms/command/CommandIdGenerator.java`
+
 === JBoss Data Grid Dispatch
+`SystemOutCommand` objects (created in the consequence of the `BaggageLostAtSorting` rule) are delegated to the `CommandDispatchChannel` object for further processing.
 `CommandDispatchChannel` is an `ApplicationScoped` CDI bean that implements the `org.kie.api.runtime.Channel` interface.
-`SystemOutCommand` objects (created in the consequence of the `BaggageLostAtSorting` rule) are sent to it by the CEP engine.
+
 
 The `CommandDispatchChannel` operates in conjunction with a different `ApplicationScoped` CDI bean called: `InfinispanidempotantCommandDispatcher`
-Collectively, these two beans are responsible for putting the `SystemOutCommand` object on an embedded JBoss Data Grid cache called: `commandsCache`.
+Collectively, these two beans are responsible for putting the `SystemOutCommand` object on a replicated and synchronized JBoss Data Grid cache called: `commandsCache`.
+
+As per the following code snippet, Infinispan's `cache.putIfAbsent(....)` function is utilized:
+
+-----
+...
+
+Command oldCommand = cache.putIfAbsent(command.getId(), command, ..);
+if (oldCommand == null) {
+    LOGGER.debug("INSERTED COMMAND with ID: " + command.getId());
+    commandExecutionService.execute(command);
+} else {
+    LOGGER.debug("IGNORED COMMAND BECUASE IT ALREADY EXISTS AND FIRED");
+}
+
+...
+-----
+
+Infinispan's `putIfAbsent(...)` function is atomic (either fully commits or rolls back) and consistent (read always returns the most recently written value) across the CEP nodes in the cluster.
 
 Refer to the following source code:
 
@@ -117,12 +195,11 @@ Refer to the following source code:
 
 === JBoss Data Grid
 
-In this project, JBoss Data Grid is used to store the `SystemOutCommand` objects in an idempotent manner.
+In this project, JBoss Data Grid is used to store at most one unique instance of a `SystemOutCommand` object across a cluster of CEP nodes.
 The name of the cache that stores the `SystemOutCommand` objects is called: `commandsCache`.
 
 The JDG cache runs embedded (aka:  Library Mode) in the CEP application.
-State transfer of data between nodes is both `replicated` to all nodes in the cluster and is `synchroneous`.
-
+State transfer of data between nodes is `replicated` to all nodes in the cluster in a `synchroneous` (aka: blocking) manner.
 These attributes of the JDG cache are critical to this project.
 They ensure that the `SystemOutCommand` objects are fired with a once-and-only-once guarantee across CEP nodes in the high avaliability cluster.
 

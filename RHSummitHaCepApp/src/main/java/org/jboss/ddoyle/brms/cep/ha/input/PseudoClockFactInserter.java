@@ -1,5 +1,7 @@
 package org.jboss.ddoyle.brms.cep.ha.input;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
@@ -34,6 +36,11 @@ public class PseudoClockFactInserter implements FactInserter {
     @PostConstruct
     private void postConstruct() {
         kieSession = sessionProducer.getKieSession();
+        SessionClock clock = kieSession.getSessionClock();
+        SessionPseudoClock pseudoClock = (SessionPseudoClock) clock;
+        long currentTime = pseudoClock.getCurrentTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        LOGGER.info("postConstruct() pseudoClock starting at the following time :"+sdf.format(new Date(currentTime)));
     }
 
     public FactHandle insert(final Fact fact) {
