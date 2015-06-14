@@ -367,9 +367,13 @@ Notice that the `BaggageLostAtSorting` rule will fire as before however all of t
 Implemented by both InfinispanIdempotantCommandDispatcher and SimpleCommandExecutionService ?
 
 == TO-DO
-. *Session Storage*
+. *Node (re)initialization*
 +
-KSession should be stored to disk and replayed if/when failure occurs
+Currently, to verify that old events are not re-executed (when a new node comes online or an old node recovers from failure), the event producer sends the same 15 events in the correct order.
++
+(re)initialization of nodes is a common requirement of blockchain technologies (ie: bitcoin, nxt) as well.
+Nodes are brought up to current state of the network as of the last mined block (~ 10 minutes for bitcoin and ~ 1 minute for nxt).
+Once fully initialized (ie; full copy of block database is local), nodes are able to participate in the mining.
 . *HA JMS*
 +
 Hornetq JMS broker should be configured for HA
@@ -378,43 +382,6 @@ Hornetq JMS broker should be configured for HA
 
 
 ifdef::showScript[]
-
-The provided startup scripts bind JBoss EAP to address 127.0.0.1, the CEP node 1 to 127.0.0.3 and the CEP node 2 to 127.0.0.4.
-
-
-
-=== UML Deployment Diagram
-
-=== Data Model
-
-===  Messaging Broker
-
-====  Hornetq vs Apache Kafka discussion
-====  HA Hornetq
-
-
-=== Event UUID Object
-
-=== BPMS/CEP Nodes
-==== JMS Topic Consumer
-==== Psuedo Clock
-==== Event Processing
-**  cep nodes receive JMS message. JMS message contains a CEP event.
-** CEP clock is advanced
-** rule engine is fired
-** create the command in the RHS
-** add that to cache.
-
-=== Command Object
-Need to be identical so as to prevent duplicate commands.
-Command ID is composed of:   rule package, rule name and event uuid
-
-=== Command Dispatcher
-
-=== Command Executor
-
-In a case of recovery commands in the cache would be read again but discarded since they already are in the cache. This can be better checked by just checking the last ID in the cache and the ID from the durable topic which have been read again in the recovery process so no need to check all of them and discard.
-
 
 === Configure *IP Aliasing*
 
